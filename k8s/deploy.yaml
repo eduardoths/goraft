@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goraft
+  namespace: goraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: goraft
+  template:
+    metadata:
+      labels:
+        app: goraft
+    spec:
+      containers:
+        - name: go-raft
+          image: eduardoths/go-raft
+          ports:
+            - containerPort: 8080
+      serviceAccountName: pod-reader
+      automountServiceAccountToken: true
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
