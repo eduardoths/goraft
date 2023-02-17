@@ -9,8 +9,13 @@ import (
 
 func main() {
 	ctx := context.Background()
-	raft := raft.New()
-	fmt.Println("Starting raft")
-	raft.Start(ctx)
-	fmt.Println("Finished raft")
+	raft, err := raft.New()
+	if err != nil {
+		panic(fmt.Errorf("Failed to instantiate raft: %v", err))
+	}
+	if err := raft.Start(ctx); err != nil {
+		panic(fmt.Errorf("Failed to start raft: %v", err))
+	}
+
+	fmt.Println("Finished")
 }
