@@ -4,33 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"github.com/eduardoths/go-raft/internal/utils/kubernetes"
+	"github.com/eduardoths/go-raft/internal/utils/random"
+)
+
+const (
+	MIN_HEARTBEAT_MS = 150
+	MAX_HEARTBEAT_MS = 300
 )
 
 func New() (Raft, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return Raft{}, err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return Raft{}, err
-	}
 	return Raft{
-		clientset: clientset,
+		heartbeat: random.Heartbeat(MIN_HEARTBEAT_MS, MAX_HEARTBEAT_MS),
+		kubeUtils: kubernetes.NewK8sUtils(),
 	}, nil
 }
 
 type Raft struct {
-	clientset *kubernetes.Clientset
+	heartbeat time.Duration
+	kubeUtils kubernetes.KubeUtils
 }
 
 func (r Raft) Start(ctx context.Context) error {
-	pods, err := r.listPods(ctx)
+	pods, err := r.kubeUtils.ListPods(ctx)
 	if err != nil {
 		return err
 	}
@@ -41,12 +39,4 @@ func (r Raft) Start(ctx context.Context) error {
 
 	fmt.Printf("Found %d pods:\n%v\n", len(pods), podsJson)
 	return nil
-}
-
-func (r Raft) listPods(ctx context.Context) ([]v1.Pod, error) {
-	pods, err := r.clientset.CoreV1().Pods("goraft").List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return pods.Items, nil
 }
